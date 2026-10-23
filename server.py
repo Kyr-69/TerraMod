@@ -631,6 +631,231 @@ namespace MyMod.Content.Items.Armor
             "preview": f"Scaffolded 1.4 Armor Set into {output_dir}"
         }
 
+    # 2. Gameplay Mechanic Scaffolding (ModPlayer + ModSystem)
+    if kind_lower in ['mechanic', 'player', 'system']:
+        player_file = os.path.join(output_dir, f"{name}Player.cs")
+        system_file = os.path.join(output_dir, f"{name}System.cs")
+        
+        player_content = f"""using Microsoft.Xna.Framework;
+using System;
+using Terraria;
+using Terraria.DataStructures;
+using Terraria.ID;
+using Terraria.ModLoader;
+
+namespace MyMod.Common.Players
+{{
+    public class {name}Player : ModPlayer
+    {{
+        // 1.4 Custom Mechanic State
+        public int {name}ResourceCurrent = 0;
+        public int {name}ResourceMax = 100;
+        public int {name}CooldownTimer = 0;
+        public bool {name}EffectActive = false;
+
+        public override void ResetEffects()
+        {{
+            {name}EffectActive = false;
+        }}
+
+        public override void PostUpdateMiscEffects()
+        {{
+            // Cooldown handling and passive resource decay / regeneration
+            if ({name}CooldownTimer > 0)
+            {{
+                {name}CooldownTimer--;
+            }}
+        }}
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
+        {{
+            if ({name}EffectActive)
+            {{
+                {name}ResourceCurrent = Math.Min({name}ResourceMax, {name}ResourceCurrent + 5);
+            }}
+        }}
+
+        public override void ModifyHitByNPC(NPC npc, ref Player.HurtModifiers modifiers)
+        {{
+            // Custom damage mitigation or trigger effects when player is hit
+        }}
+    }}
+}}
+"""
+        system_content = f"""using Terraria.ModLoader;
+
+namespace MyMod.Common.Systems
+{{
+    public class {name}System : ModSystem
+    {{
+        public override void PostUpdateWorld()
+        {{
+            // World-level timers or environmental mechanic updates
+        }}
+    }}
+}}
+"""
+        with open(player_file, 'w', encoding='utf-8') as f:
+            f.write(player_content.strip() + '\n')
+        with open(system_file, 'w', encoding='utf-8') as f:
+            f.write(system_content.strip() + '\n')
+
+        return {
+            "name": name,
+            "kind": "Mechanic",
+            "status": "created",
+            "files_created": [player_file, system_file],
+            "components": {
+                "player": f"{name}Player.cs (ModPlayer with resource state, ResetEffects & OnHitNPC)",
+                "system": f"{name}System.cs (ModSystem with PostUpdateWorld)"
+            },
+            "preview": f"Scaffolded 1.4 Gameplay Mechanic ModPlayer and ModSystem into {output_dir}"
+        }
+
+    # 3. Armor Set Scaffolding (Head, Body, Legs)
+    if kind_lower in ['armor', 'set', 'armorset']:
+        helmet_file = os.path.join(output_dir, f"{name}Helmet.cs")
+        chest_file = os.path.join(output_dir, f"{name}Breastplate.cs")
+        legs_file = os.path.join(output_dir, f"{name}Leggings.cs")
+        
+        h_code = f"""using Terraria;
+using Terraria.ID;
+using Terraria.Localization;
+using Terraria.ModLoader;
+
+namespace MyMod.Content.Items.Armor
+{{
+    [AutoloadEquip(EquipType.Head)]
+    public class {name}Helmet : ModItem
+    {{
+        public static LocalizedText SetBonusText {{ get; private set; }}
+
+        public override void SetStaticDefaults()
+        {{
+            SetBonusText = this.GetLocalization(\"SetBonus\");
+        }}
+
+        public override void SetDefaults()
+        {{
+            Item.width = 24;
+            Item.height = 20;
+            Item.value = Item.buyPrice(gold: 5);
+            Item.rare = ItemRarityID.Pink;
+            Item.defense = 12;
+        }}
+
+        public override void UpdateEquip(Player player)
+        {{
+            player.GetDamage(DamageClass.Generic) += 0.10f;
+        }}
+
+        public override bool IsArmorSet(Item head, Item body, Item legs)
+        {{
+            return body.type == ModContent.ItemType<{name}Breastplate>() && legs.type == ModContent.ItemType<{name}Leggings>();
+        }}
+
+        public override void UpdateArmorSet(Player player)
+        {{
+            player.setBonus = SetBonusText.Value;
+            player.GetDamage(DamageClass.Generic) += 0.15f;
+        }}
+
+        public override void AddRecipes()
+        {{
+            CreateRecipe()
+                .AddIngredient(ItemID.HallowedBar, 12)
+                .AddTile(TileID.MythrilAnvil)
+                .Register();
+        }}
+    }}
+}}
+"""
+        c_code = f"""using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
+
+namespace MyMod.Content.Items.Armor
+{{
+    [AutoloadEquip(EquipType.Body)]
+    public class {name}Breastplate : ModItem
+    {{
+        public override void SetDefaults()
+        {{
+            Item.width = 30;
+            Item.height = 20;
+            Item.value = Item.buyPrice(gold: 5);
+            Item.rare = ItemRarityID.Pink;
+            Item.defense = 18;
+        }}
+
+        public override void UpdateEquip(Player player)
+        {{
+            player.GetDamage(DamageClass.Generic) += 0.10f;
+        }}
+
+        public override void AddRecipes()
+        {{
+            CreateRecipe()
+                .AddIngredient(ItemID.HallowedBar, 24)
+                .AddTile(TileID.MythrilAnvil)
+                .Register();
+        }}
+    }}
+}}
+"""
+        l_code = f"""using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
+
+namespace MyMod.Content.Items.Armor
+{{
+    [AutoloadEquip(EquipType.Legs)]
+    public class {name}Leggings : ModItem
+    {{
+        public override void SetDefaults()
+        {{
+            Item.width = 22;
+            Item.height = 18;
+            Item.value = Item.buyPrice(gold: 5);
+            Item.rare = ItemRarityID.Pink;
+            Item.defense = 14;
+        }}
+
+        public override void UpdateEquip(Player player)
+        {{
+            player.moveSpeed += 0.15f;
+        }}
+
+        public override void AddRecipes()
+        {{
+            CreateRecipe()
+                .AddIngredient(ItemID.HallowedBar, 18)
+                .AddTile(TileID.MythrilAnvil)
+                .Register();
+        }}
+    }}
+}}
+"""
+        with open(helmet_file, 'w', encoding='utf-8') as f:
+            f.write(h_code.strip() + '\n')
+        with open(chest_file, 'w', encoding='utf-8') as f:
+            f.write(c_code.strip() + '\n')
+        with open(legs_file, 'w', encoding='utf-8') as f:
+            f.write(l_code.strip() + '\n')
+
+        return {
+            "name": name,
+            "kind": "Armor",
+            "status": "created",
+            "files_created": [helmet_file, chest_file, legs_file],
+            "components": {
+                "head": f"{name}Helmet.cs",
+                "body": f"{name}Breastplate.cs",
+                "legs": f"{name}Leggings.cs"
+            },
+            "preview": f"Scaffolded 1.4 Armor Set into {output_dir}"
+        }
+
     # 4. In-Game UI Scaffolding (UIState + ModSystem Layer Injection)
     if kind_lower in ['ui', 'uistate', 'hud', 'panel']:
         ui_state_file = os.path.join(output_dir, f"{name}UIState.cs")
