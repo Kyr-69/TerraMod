@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: inherit; }
+  .container {
+    padding: 12px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 640px;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+  .title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .subtitle {
+    font-size: 11px;
+    color: var(--muted-foreground);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  @media (max-width: 500px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 6px;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+    cursor: pointer;
+    text-align: left;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .badge {
+    font-size: 9px;
+    font-family: monospace;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: var(--border);
+    color: var(--foreground);
+  }
+  .card-summary {
+    font-size: 11px;
+    color: var(--muted-foreground);
+    line-height: 1.3;
+  }
+  .idea-box {
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 2px solid var(--accent);
+    padding: 4px 6px;
+    border-radius: 0 4px 4px 0;
+    margin-top: 2px;
+  }
+  .idea-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .idea-text {
+    font-size: 10.5px;
+    color: var(--foreground);
+    line-height: 1.3;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="title">⚡ TerraMod 1.4 Creation Studio</div>
+    <div class="subtitle">Click any card to start</div>
+  </div>
+
+  <div class="grid">
+    <div class="card" data-hermes-send="teramod create Mechanic HeatSystem">
+      <div class="card-top">
+        <span class="card-title">⚙️ Gameplay Mechanic</span>
+        <span class="badge">Mechanic</span>
+      </div>
+      <div class="card-summary">ModPlayer & ModSystem logic, hooks & custom stats</div>
+      <div class="idea-box">
+        <div class="idea-label">Idea Description</div>
+        <div class="idea-text">Heat/Stamina meter, dash/dodge roll, right-click parry, combo streak counter, or custom resource decay.</div>
+      </div>
+    </div>
+
+    <div class="card" data-hermes-send="teramod create UI ManaGauge">
+      <div class="card-top">
+        <span class="card-title">🖥️ In-Game HUD & UI</span>
+        <span class="badge">UI</span>
+      </div>
+      <div class="card-summary">UIState layout + UserInterface layer injection</div>
+      <div class="idea-box">
+        <div class="idea-label">Idea Description</div>
+        <div class="idea-text">Resource gauge bar, draggable info window, inventory slot grid, or cooldown tracker with mouse-lock.</div>
+      </div>
+    </div>
+
+    <div class="card" data-hermes-send="teramod create Sword FrostBrand">
+      <div class="card-top">
+        <span class="card-title">⚔️ Weapon or Tool</span>
+        <span class="badge">Sword</span>
+      </div>
+      <div class="card-summary">1.4 ModItem with swing animation, projectiles & on-hit</div>
+      <div class="idea-box">
+        <div class="idea-label">Idea Description</div>
+        <div class="idea-text">Transforming weapon, homing astral staff, alt-fire shotgun, or summoner whip with tag damage.</div>
+      </div>
+    </div>
+
+    <div class="card" data-hermes-send="teramod create Armor CelestialSet">
+      <div class="card-top">
+        <span class="card-title">🛡️ Armor Set & Bonus</span>
+        <span class="badge">Armor</span>
+      </div>
+      <div class="card-summary">Head, Body, Legs pieces + SetBonus ability</div>
+      <div class="idea-box">
+        <div class="idea-label">Idea Description</div>
+        <div class="idea-text">Endgame celestial set with minion slot boosts, damage resistance, active ability keybinds & trails.</div>
+      </div>
+    </div>
+
+    <div class="card" data-hermes-send="teramod create NPC VoidWarden">
+      <div class="card-top">
+        <span class="card-title">👾 Boss / Custom Enemy</span>
+        <span class="badge">NPC</span>
+      </div>
+      <div class="card-summary">State machine AI, phases, telegraphs & loot table</div>
+      <div class="idea-box">
+        <div class="idea-label">Idea Description</div>
+        <div class="idea-text">Multi-phase boss with telegraph attacks, projectile spirals, custom treasure bag & music track.</div>
+      </div>
+    </div>
+
+    <div class="card" data-hermes-send="teramod create Project NewMod">
+      <div class="card-top">
+        <span class="card-title">📦 Full Mod Project</span>
+        <span class="badge">Project</span>
+      </div>
+      <div class="card-summary">Complete 1.4 project structure & build files</div>
+      <div class="idea-box">
+        <div class="idea-label">Idea Description</div>
+        <div class="idea-text">Comprehensive layout with .csproj, build.txt, description, en-US.hjson & starter item.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
