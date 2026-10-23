@@ -304,13 +304,282 @@ def tool_tmod_migrate(file_or_dir: str, dry_run: bool = False) -> Dict[str, Any]
         "modified_files": modified_files
     }
 
-def tool_tmod_create(kind: str, name: str, output_dir: Optional[str] = None) -> Dict[str, Any]:
-    """Scaffolds a compliant 1.4 ModItem, ModNPC, ModProjectile, or Boss file."""
+def tool_tmod_create(kind: str = "Plan", name: str = "MyMod", output_dir: Optional[str] = None) -> Dict[str, Any]:
+    """Scaffolds compliant 1.4 ModItem, ModNPC, ModProjectile, Boss, UIState/UISystem, entire mod project, or runs interactive Plan interview."""
     if output_dir is None:
         output_dir = os.getcwd()
     os.makedirs(output_dir, exist_ok=True)
     
-    kind_lower = kind.lower()
+    kind_lower = (kind or "plan").lower()
+    
+    # 1. Interactive Planning / Interview Mode
+    if kind_lower in ['plan', 'interview', 'interactive'] or not name or name.lower() in ['help', 'plan']:
+        mod_name = name if (name and name.lower() not in ['help', 'plan']) else "CustomMod"
+        return {
+            "status": "interactive_plan_required",
+            "step": "interview",
+            "message": f"Interactive Mod Planning Session for '{mod_name}'. Answer these questions to align on the blueprint before scaffolding:",
+            "interview_questions": [
+                {
+                    "id": "theme_and_scope",
+                    "question": "What is the scope and combat theme of your mod?",
+                    "options": [
+                        "Single Weapon / Tool (Melee, Ranged, Magic, Summon)",
+                        "Class Content Set (Weapon, Armor, Accessory)",
+                        "Custom Mechanic with In-Game HUD (Energy, Heat, Cooldown)",
+                        "Boss / Mini-Boss Encounter (Custom AI, Loot, Music)",
+                        "Full Content Overhaul"
+                    ]
+                },
+                {
+                    "id": "ui_requirements",
+                    "question": "What kind of in-game UI does your mod need?",
+                    "options": [
+                        "No in-game UI (Pure item/NPC content)",
+                        "Resource Gauge / Meter (Draws in 'Vanilla: Mouse Text' layer)",
+                        "Draggable Panel with Buttons (UIPanel with LeftMouseDown/Up drag)",
+                        "Inventory / Item Slot Grid (Interactive UIElement)"
+                    ]
+                },
+                {
+                    "id": "progression_tier",
+                    "question": "What game stage is this balanced around?",
+                    "options": [
+                        "Early Pre-Hardmode (Wood/Ore tier)",
+                        "Late Pre-Hardmode (Dungeon / Underworld)",
+                        "Early Hardmode (Mech Boss tier)",
+                        "Endgame (Post-Moon Lord / Celestial)"
+                    ]
+                }
+            ],
+            "blueprint_template": {
+                "mod_name": mod_name,
+                "version": "0.1.0",
+                "author": "Kyr-69",
+                "files_to_scaffold": [
+                    "build.txt",
+                    f"{mod_name}.csproj",
+                    "description.txt",
+                    "Localization/en-US.hjson",
+                    f"Common/UI/{mod_name}UIState.cs",
+                    f"Common/UI/{mod_name}UISystem.cs",
+                    f"Content/Items/{mod_name}Blade.cs"
+                ]
+            },
+            "next_step": "Reply with your chosen options, or run teramod create <Item|UI|Project> <Name> to scaffold immediately."
+        }
+        
+    # 2. In-Game UI Scaffolding (UIState + ModSystem Layer Injection)
+    if kind_lower in ['ui', 'uistate', 'hud', 'panel']:
+        ui_state_file = os.path.join(output_dir, f"{name}UIState.cs")
+        ui_system_file = os.path.join(output_dir, f"{name}UISystem.cs")
+        
+        state_content = f"""using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Terraria;
+using Terraria.GameContent.UI.Elements;
+using Terraria.UI;
+
+namespace MyMod.Common.UI
+{{
+    public class {name}UIState : UIState
+    {{
+        public UIPanel Panel;
+        public UIText StatusText;
+
+        public override void OnInitialize()
+        {{
+            // Container panel
+            Panel = new UIPanel();
+            Panel.Left.Set(24f, 0f);
+            Panel.Top.Set(120f, 0f);
+            Panel.Width.Set(240f, 0f);
+            Panel.Height.Set(70f, 0f);
+            Panel.BackgroundColor = new Color(28, 38, 68, 210);
+
+            // Text display inside panel
+            StatusText = new UIText(\"{name}: Active\", 0.9f);
+            StatusText.HAlign = 0.5f;
+            StatusText.VAlign = 0.5f;
+            Panel.Append(StatusText);
+
+            Append(Panel);
+        }}
+
+        public override void Update(GameTime gameTime)
+        {{
+            base.Update(gameTime);
+
+            // Prevent weapon use while mouse interacts with this panel
+            if (Panel.ContainsPoint(Main.MouseScreen))
+            {{
+                Main.LocalPlayer.mouseInterface = true;
+            }}
+        }}
+
+        protected override void DrawSelf(SpriteBatch spriteBatch)
+        {{
+            base.DrawSelf(spriteBatch);
+        }}
+    }}
+}}
+"""
+        system_content = f"""using Microsoft.Xna.Framework;
+using System.Collections.Generic;
+using Terraria;
+using Terraria.ModLoader;
+using Terraria.UI;
+
+namespace MyMod.Common.UI
+{{
+    [Autoload(Side = ModSide.Client)]
+    public class {name}UISystem : ModSystem
+    {{
+        private UserInterface customUserInterface;
+        internal {name}UIState customUIState;
+
+        public void ShowUI()
+        {{
+            customUserInterface?.SetState(customUIState);
+        }}
+
+        public void HideUI()
+        {{
+            customUserInterface?.SetState(null);
+        }}
+
+        public void ToggleUI()
+        {{
+            if (customUserInterface?.CurrentState != null)
+                HideUI();
+            else
+                ShowUI();
+        }}
+
+        public override void Load()
+        {{
+            customUserInterface = new UserInterface();
+            customUIState = new {name}UIState();
+            customUIState.Activate();
+            customUserInterface.SetState(customUIState);
+        }}
+
+        public override void Unload()
+        {{
+            customUIState = null;
+            customUserInterface = null;
+        }}
+
+        public override void UpdateUI(GameTime gameTime)
+        {{
+            if (customUserInterface?.CurrentState != null)
+            {{
+                customUserInterface.Update(gameTime);
+            }}
+        }}
+
+        public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
+        {{
+            int mouseTextIndex = layers.FindIndex(layer => layer.Name.Equals(\"Vanilla: Mouse Text\"));
+            if (mouseTextIndex != -1)
+            {{
+                layers.Insert(mouseTextIndex, new LegacyGameInterfaceLayer(
+                    \"MyMod: {name} UI Layer\",
+                    delegate
+                    {{
+                        if (customUserInterface?.CurrentState != null)
+                        {{
+                            customUserInterface.Draw(Main.spriteBatch, new GameTime());
+                        }}
+                        return true;
+                    }},
+                    InterfaceScaleType.UI
+                ));
+            }}
+        }}
+    }}
+}}
+"""
+        with open(ui_state_file, 'w', encoding='utf-8') as f:
+            f.write(state_content.strip() + '\n')
+        with open(ui_system_file, 'w', encoding='utf-8') as f:
+            f.write(system_content.strip() + '\n')
+
+        return {
+            "name": name,
+            "kind": "UI",
+            "status": "created",
+            "files_created": [ui_state_file, ui_system_file],
+            "components": {
+                "ui_state": f"{name}UIState.cs (UIState container with mouseInterface handling)",
+                "ui_system": f"{name}UISystem.cs (ModSystem with client autoload, UpdateUI & ModifyInterfaceLayers)"
+            },
+            "preview": f"Scaffolded 1.4 UIState and UISystem into {output_dir}"
+        }
+
+    # 3. Full Mod Project Scaffolding
+    if kind_lower in ['project', 'mod', 'scaffold']:
+        proj_dir = os.path.join(output_dir, name)
+        items_dir = os.path.join(proj_dir, "Content", "Items")
+        ui_dir = os.path.join(proj_dir, "Common", "UI")
+        loc_dir = os.path.join(proj_dir, "Localization")
+        
+        os.makedirs(items_dir, exist_ok=True)
+        os.makedirs(ui_dir, exist_ok=True)
+        os.makedirs(loc_dir, exist_ok=True)
+        
+        with open(os.path.join(proj_dir, "build.txt"), "w", encoding='utf-8') as f:
+            f.write(f"displayName = {name}\nauthor = Kyr-69\nversion = 0.1.0\nhomepage = https://github.com/Kyr-69/TerraMod\n")
+            
+        with open(os.path.join(proj_dir, "description.txt"), "w", encoding='utf-8') as f:
+            f.write(f"A modern tModLoader 1.4 mod built with TerraMod.\n")
+            
+        with open(os.path.join(proj_dir, f"{name}.csproj"), "w", encoding='utf-8') as f:
+            f.write(f"""<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\\tModLoader.targets" />
+  <PropertyGroup>
+    <AssemblyName>{name}</AssemblyName>
+    <TargetFramework>net6.0</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+</Project>
+""")
+            
+        with open(os.path.join(loc_dir, "en-US.hjson"), "w", encoding='utf-8') as f:
+            f.write(f"""Mods: {{
+  {name}: {{
+    Items: {{
+      {name}Blade: {{
+        DisplayName: \"{name} Blade\"
+        Tooltip: \"Crafted with the power of TerraMod.\"
+      }}
+    }}
+  }}
+}}
+""")
+            
+        tool_tmod_create("Item", f"{name}Blade", items_dir)
+        tool_tmod_create("UI", f"{name}HUD", ui_dir)
+        
+        return {
+            "name": name,
+            "kind": "Project",
+            "status": "created",
+            "project_dir": proj_dir,
+            "files_created": [
+                os.path.join(proj_dir, "build.txt"),
+                os.path.join(proj_dir, "description.txt"),
+                os.path.join(proj_dir, f"{name}.csproj"),
+                os.path.join(loc_dir, "en-US.hjson"),
+                os.path.join(items_dir, f"{name}Blade.cs"),
+                os.path.join(ui_dir, f"{name}HUDUIState.cs"),
+                os.path.join(ui_dir, f"{name}HUDUISystem.cs")
+            ],
+            "preview": f"Successfully created complete 1.4 mod project '{name}'."
+        }
+
+    # 4. Standard Entities (Item, NPC, Projectile)
     file_path = os.path.join(output_dir, f"{name}.cs")
     
     if kind_lower in ['item', 'sword', 'weapon']:
@@ -426,8 +695,8 @@ def tool_teramod(command: str = "help", target: Optional[str] = None, extra: Opt
                 {"command": "/teramod decompile <tmod_file>", "description": "Unpack and decompile .tmod archive into editable C# project with .csproj"},
                 {"command": "/teramod audit <root_folder>", "description": "Scan mod project, report entities, and detect deprecated 1.3 code patterns"},
                 {"command": "/teramod migrate <root_folder>", "description": "Automatically patch obsolete 1.3 syntax into canonical 1.4.4 code"},
-                {"command": "/teramod create <Item|NPC|Projectile|Boss> <Name>", "description": "Scaffold new 1.4-compliant class file with modern boilerplates"},
-                {"command": "/teramod docs <ClassOrHook>", "description": "Look up overridable virtual hooks, signatures, and summaries"},
+                {"command": "/teramod create [Item|UI|Project] [Name]", "description": "Interactive mod planner or scaffolding for 1.4 Items, in-game UIState/UISystem, or entire projects"},
+                {"command": "/teramod docs <ClassOrHook>", "description": "Look up overridable 1.4 virtual hooks (ModItem, ModNPC, UIState, UserInterface, ModSystem)"},
                 {"command": "/teramod build <root_folder>", "description": "Run dotnet build and diagnose compiler errors with knowledge graph"},
                 {"command": "/teramod unpack <tmod_file>", "description": "Extract binary .tmod assets, textures, sounds, and DLL assembly"}
             ]
@@ -443,8 +712,15 @@ def tool_teramod(command: str = "help", target: Optional[str] = None, extra: Opt
     elif cmd == "migrate":
         return tool_tmod_migrate(target or os.getcwd())
     elif cmd == "create":
-        kind = extra or "Item"
-        name = target or "NewItem"
+        if not target or target.lower() in ["plan", "help", "interview", "interactive"]:
+            return tool_tmod_create(kind="plan", name=extra or "MyMod")
+        known_kinds = ['item', 'sword', 'weapon', 'npc', 'enemy', 'boss', 'projectile', 'ui', 'uistate', 'hud', 'panel', 'project', 'mod', 'scaffold']
+        if target.lower() in known_kinds and extra:
+            kind = target
+            name = extra
+        else:
+            kind = extra or "Item"
+            name = target
         return tool_tmod_create(kind, name)
     elif cmd in ["docs", "hooks"]:
         return tool_get_class_hooks(target or "ModItem")
@@ -495,15 +771,14 @@ TOOLS_METADATA = [
     },
     {
         "name": "tmod_create",
-        "description": "Scaffolds a compliant 1.4 ModItem, ModNPC, ModProjectile, or Boss file",
+        "description": "Scaffolds compliant 1.4 ModItem, ModNPC, ModProjectile, Boss, UI (UIState + UISystem), Project structure, or runs interactive Plan interview",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "kind": {"type": "string", "description": "Item, NPC, Projectile, or Boss"},
-                "name": {"type": "string", "description": "Class name for the new entity"},
+                "kind": {"type": "string", "description": "Plan (interactive interview), UI (UIState + UISystem), Project (full mod), Item, NPC, Projectile, or Boss", "default": "Plan"},
+                "name": {"type": "string", "description": "Class or project name for the new entity", "default": "MyMod"},
                 "output_dir": {"type": "string", "description": "Directory where file should be created"}
-            },
-            "required": ["kind", "name"]
+            }
         }
     },
     {
@@ -639,6 +914,14 @@ Welcome to **TerraMod**! Below are the available commands and workflows for tMod
 | `/teramod build <dir>` | Run dotnet build with knowledge-graph compiler diagnostics | `/teramod build ./my_mod_src` |
 
 To begin, type any of the commands above!"""
+    elif cmd == "create":
+        prompt_text = f"""# TerraMod 1.4 Interactive Creation Mode
+Target: '{target or "NewMod"}', Type: '{extra or "Plan"}'
+
+Follow the 3-step interactive creation protocol:
+1. **Interactive Alignment**: Guide the user through theme, combat class, entity scope, in-game UI requirements (UIState / UserInterface layer injection), and balance stage.
+2. **Spec Blueprint**: Summarize the design into a clear plan (MOD_SPEC.md).
+3. **Execution**: Scaffold the complete mod code and UI classes using `teramod(command='create', target='{target or "NewMod"}', extra='{extra or "UI"}')`."""
     else:
         prompt_text = f"User requested TerraMod subcommand: '{cmd}'. Target: '{target}', Extra: '{extra}'.\nPlease execute the corresponding TerraMod tool (e.g. `teramod(command='{cmd}', target='{target}', extra='{extra}')`) and report results."
         

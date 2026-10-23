@@ -42,8 +42,8 @@ TerraMod includes an interactive MCP prompt and terminal CLI (`teramod`).
 | `/teramod decompile <PathTo.tmod>` | Unpack & decompile .tmod into an editable C# project with `.csproj` | `/teramod decompile ~/.local/share/.../Mod.tmod` |
 | `/teramod audit <RootFolder>` | Scan mod files, report entities, and detect deprecated 1.3 patterns | `/teramod audit ./my_mod_src` |
 | `/teramod migrate <RootFolder>` | Automatically refactor obsolete 1.3 code into canonical 1.4.4 | `/teramod migrate ./my_mod_src` |
-| `/teramod create <Type> <Name>` | Scaffold 1.4 ModItem, ModNPC, Projectile, or Boss boilerplate | `/teramod create Item FrostBlade` |
-| `/teramod docs <ClassOrHook>` | Look up exact 1.4 signatures, parameter types, and summaries | `/teramod docs ModItem.OnHitNPC` |
+| `/teramod create [Type] [Name]` | Interactive planning interview, or scaffold 1.4 Items, in-game UIState/UISystem, and Projects | `/teramod create` or `teramod create UI ManaGauge` |
+| `/teramod docs <ClassOrHook>` | Look up exact 1.4 signatures, parameter types, and summaries (Items, NPCs, UIState, UserInterface) | `/teramod docs UIState` |
 | `/teramod build <RootFolder>` | Run `dotnet build` with knowledge-graph compiler diagnostics | `/teramod build ./my_mod_src` |
 | `/teramod unpack <PathTo.tmod>` | Extract binary `.tmod` raw assets, textures, sounds, and DLL | `/teramod unpack ./Mod.tmod` |
 
