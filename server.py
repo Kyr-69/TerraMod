@@ -318,37 +318,74 @@ def tool_tmod_create(kind: str = "Plan", name: str = "MyMod", output_dir: Option
         return {
             "status": "interactive_plan_required",
             "step": "interview",
-            "message": f"Interactive Mod Planning Session for '{mod_name}'. Answer these questions to align on the blueprint before scaffolding:",
+            "message": f"Interactive Mod Planning Session for '{mod_name}'. Select a content category or explore ideas:",
             "interview_questions": [
                 {
-                    "id": "theme_and_scope",
-                    "question": "What is the scope and combat theme of your mod?",
+                    "id": "content_type",
+                    "question": "What type of content are you creating?",
                     "options": [
-                        "Single Weapon / Tool (Melee, Ranged, Magic, Summon)",
-                        "Class Content Set (Weapon, Armor, Accessory)",
-                        "Custom Mechanic with In-Game HUD (Energy, Heat, Cooldown)",
-                        "Boss / Mini-Boss Encounter (Custom AI, Loot, Music)",
-                        "Full Content Overhaul"
-                    ]
-                },
-                {
-                    "id": "ui_requirements",
-                    "question": "What kind of in-game UI does your mod need?",
-                    "options": [
-                        "No in-game UI (Pure item/NPC content)",
-                        "Resource Gauge / Meter (Draws in 'Vanilla: Mouse Text' layer)",
-                        "Draggable Panel with Buttons (UIPanel with LeftMouseDown/Up drag)",
-                        "Inventory / Item Slot Grid (Interactive UIElement)"
+                        {
+                            "name": "Custom Gameplay Mechanic",
+                            "command": "Mechanic",
+                            "summary": "ModPlayer & ModSystem driven mechanics, custom resources, and hooks.",
+                            "idea": "Heat/stamina resource meter, dash or dodge roll, right-click parry, combo streak counter, or custom damage scaling."
+                        },
+                        {
+                            "name": "In-Game HUD & Interface",
+                            "command": "UI",
+                            "summary": "1.4 UIState and UserInterface layer injections into the game canvas.",
+                            "idea": "Resource gauge/bar overlay in 'Vanilla: Mouse Text' layer, draggable info panel, inventory slot grid, or cooldown tracker with mouse-lock guards."
+                        },
+                        {
+                            "name": "Weapon or Equipment",
+                            "command": "Sword",
+                            "summary": "1.4 ModItem with swing animation, projectile shooting, and hit effects.",
+                            "idea": "Transforming greatsword, homing celestial staff, alt-fire firearm, or summoner whip with minion tag damage."
+                        },
+                        {
+                            "name": "Armor Set & Set Bonus",
+                            "command": "Armor",
+                            "summary": "Coordinated Head, Body, Legs armor set with custom SetBonus ability.",
+                            "idea": "Endgame celestial set with minion slot boosts, damage resistance, active ability keybinds, and visual dust trails."
+                        },
+                        {
+                            "name": "Boss Encounter or Custom Enemy",
+                            "command": "NPC",
+                            "summary": "AI-driven enemy with state machine, attack phases, and custom drops.",
+                            "idea": "Multi-phase boss with telegraph attacks, projectile spirals, custom treasure bag, and music track."
+                        },
+                        {
+                            "name": "Full Mod Project",
+                            "command": "Project",
+                            "summary": "Complete 1.4 project structure ready for tModLoader compilation.",
+                            "idea": "Comprehensive scaffolding with .csproj, build.txt, description, en-US.hjson localization, and starter items."
+                        }
                     ]
                 },
                 {
                     "id": "progression_tier",
-                    "question": "What game stage is this balanced around?",
+                    "question": "What game stage should it be balanced around?",
                     "options": [
-                        "Early Pre-Hardmode (Wood/Ore tier)",
-                        "Late Pre-Hardmode (Dungeon / Underworld)",
-                        "Early Hardmode (Mech Boss tier)",
-                        "Endgame (Post-Moon Lord / Celestial)"
+                        {
+                            "name": "Early Pre-Hardmode",
+                            "summary": "Wood, copper/iron ore, surface/underground tier",
+                            "idea": "Balanced around Eye of Cthulhu & King Slime. Low mana costs, basic weapon swings, simple movement speed boosts."
+                        },
+                        {
+                            "name": "Late Pre-Hardmode",
+                            "summary": "Dungeon, Shadow Orb/Crimson Heart, Hellstone tier",
+                            "idea": "Wall of Flesh ready. Penetrating attacks, double jumps, complex buff immunities, and underworld crafting recipes."
+                        },
+                        {
+                            "name": "Early Hardmode",
+                            "summary": "Cobalt/Mythril, Souls of Night/Light tier",
+                            "idea": "Mechanical Bosses tier. Secondary projectile sprays, armor set bonuses with dashing or stealth, and flight accessories."
+                        },
+                        {
+                            "name": "Endgame / Celestial",
+                            "summary": "Pillar Fragments, Luminite, Moon Lord tier",
+                            "idea": "Overpowered stats, screen-clearing AoE, 100+ minion slots, infinite flight, or celestial dust trail visuals."
+                        }
                     ]
                 }
             ],
@@ -366,10 +403,235 @@ def tool_tmod_create(kind: str = "Plan", name: str = "MyMod", output_dir: Option
                     f"Content/Items/{mod_name}Blade.cs"
                 ]
             },
-            "next_step": "Reply with your chosen options, or run teramod create <Item|UI|Project> <Name> to scaffold immediately."
+            "next_step": "Run teramod create <Type> <Name> (e.g. teramod create Mechanic HeatSystem or teramod create UI ManaHUD) to scaffold immediately."
         }
         
-    # 2. In-Game UI Scaffolding (UIState + ModSystem Layer Injection)
+    # 2. Gameplay Mechanic Scaffolding (ModPlayer + ModSystem)
+    if kind_lower in ['mechanic', 'player', 'system']:
+        player_file = os.path.join(output_dir, f"{name}Player.cs")
+        system_file = os.path.join(output_dir, f"{name}System.cs")
+        
+        player_content = f"""using Microsoft.Xna.Framework;
+using System;
+using Terraria;
+using Terraria.DataStructures;
+using Terraria.ID;
+using Terraria.ModLoader;
+
+namespace MyMod.Common.Players
+{{
+    public class {name}Player : ModPlayer
+    {{
+        // 1.4 Custom Mechanic State
+        public int {name}ResourceCurrent = 0;
+        public int {name}ResourceMax = 100;
+        public int {name}CooldownTimer = 0;
+        public bool {name}EffectActive = false;
+
+        public override void ResetEffects()
+        {{
+            {name}EffectActive = false;
+        }}
+
+        public override void PostUpdateMiscEffects()
+        {{
+            // Cooldown handling and passive resource decay / regeneration
+            if ({name}CooldownTimer > 0)
+            {{
+                {name}CooldownTimer--;
+            }}
+        }}
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
+        {{
+            if ({name}EffectActive)
+            {{
+                {name}ResourceCurrent = Math.Min({name}ResourceMax, {name}ResourceCurrent + 5);
+            }}
+        }}
+
+        public override void ModifyHitByNPC(NPC npc, ref Player.HurtModifiers modifiers)
+        {{
+            // Custom damage mitigation or trigger effects when player is hit
+        }}
+    }}
+}}
+"""
+        system_content = f"""using Terraria.ModLoader;
+
+namespace MyMod.Common.Systems
+{{
+    public class {name}System : ModSystem
+    {{
+        public override void PostUpdateWorld()
+        {{
+            // World-level timers or environmental mechanic updates
+        }}
+    }}
+}}
+"""
+        with open(player_file, 'w', encoding='utf-8') as f:
+            f.write(player_content.strip() + '\n')
+        with open(system_file, 'w', encoding='utf-8') as f:
+            f.write(system_content.strip() + '\n')
+
+        return {
+            "name": name,
+            "kind": "Mechanic",
+            "status": "created",
+            "files_created": [player_file, system_file],
+            "components": {
+                "player": f"{name}Player.cs (ModPlayer with resource state, ResetEffects & OnHitNPC)",
+                "system": f"{name}System.cs (ModSystem with PostUpdateWorld)"
+            },
+            "preview": f"Scaffolded 1.4 Gameplay Mechanic ModPlayer and ModSystem into {output_dir}"
+        }
+
+    # 3. Armor Set Scaffolding (Head, Body, Legs)
+    if kind_lower in ['armor', 'set', 'armorset']:
+        helmet_file = os.path.join(output_dir, f"{name}Helmet.cs")
+        chest_file = os.path.join(output_dir, f"{name}Breastplate.cs")
+        legs_file = os.path.join(output_dir, f"{name}Leggings.cs")
+        
+        h_code = f"""using Terraria;
+using Terraria.ID;
+using Terraria.Localization;
+using Terraria.ModLoader;
+
+namespace MyMod.Content.Items.Armor
+{{
+    [AutoloadEquip(EquipType.Head)]
+    public class {name}Helmet : ModItem
+    {{
+        public static LocalizedText SetBonusText {{ get; private set; }}
+
+        public override void SetStaticDefaults()
+        {{
+            SetBonusText = this.GetLocalization(\"SetBonus\");
+        }}
+
+        public override void SetDefaults()
+        {{
+            Item.width = 24;
+            Item.height = 20;
+            Item.value = Item.buyPrice(gold: 5);
+            Item.rare = ItemRarityID.Pink;
+            Item.defense = 12;
+        }}
+
+        public override void UpdateEquip(Player player)
+        {{
+            player.GetDamage(DamageClass.Generic) += 0.10f;
+        }}
+
+        public override bool IsArmorSet(Item head, Item body, Item legs)
+        {{
+            return body.type == ModContent.ItemType<{name}Breastplate>() && legs.type == ModContent.ItemType<{name}Leggings>();
+        }}
+
+        public override void UpdateArmorSet(Player player)
+        {{
+            player.setBonus = SetBonusText.Value;
+            player.GetDamage(DamageClass.Generic) += 0.15f;
+        }}
+
+        public override void AddRecipes()
+        {{
+            CreateRecipe()
+                .AddIngredient(ItemID.HallowedBar, 12)
+                .AddTile(TileID.MythrilAnvil)
+                .Register();
+        }}
+    }}
+}}
+"""
+        c_code = f"""using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
+
+namespace MyMod.Content.Items.Armor
+{{
+    [AutoloadEquip(EquipType.Body)]
+    public class {name}Breastplate : ModItem
+    {{
+        public override void SetDefaults()
+        {{
+            Item.width = 30;
+            Item.height = 20;
+            Item.value = Item.buyPrice(gold: 5);
+            Item.rare = ItemRarityID.Pink;
+            Item.defense = 18;
+        }}
+
+        public override void UpdateEquip(Player player)
+        {{
+            player.GetDamage(DamageClass.Generic) += 0.10f;
+        }}
+
+        public override void AddRecipes()
+        {{
+            CreateRecipe()
+                .AddIngredient(ItemID.HallowedBar, 24)
+                .AddTile(TileID.MythrilAnvil)
+                .Register();
+        }}
+    }}
+}}
+"""
+        l_code = f"""using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
+
+namespace MyMod.Content.Items.Armor
+{{
+    [AutoloadEquip(EquipType.Legs)]
+    public class {name}Leggings : ModItem
+    {{
+        public override void SetDefaults()
+        {{
+            Item.width = 22;
+            Item.height = 18;
+            Item.value = Item.buyPrice(gold: 5);
+            Item.rare = ItemRarityID.Pink;
+            Item.defense = 14;
+        }}
+
+        public override void UpdateEquip(Player player)
+        {{
+            player.moveSpeed += 0.15f;
+        }}
+
+        public override void AddRecipes()
+        {{
+            CreateRecipe()
+                .AddIngredient(ItemID.HallowedBar, 18)
+                .AddTile(TileID.MythrilAnvil)
+                .Register();
+        }}
+    }}
+}}
+"""
+        with open(helmet_file, 'w', encoding='utf-8') as f:
+            f.write(h_code.strip() + '\n')
+        with open(chest_file, 'w', encoding='utf-8') as f:
+            f.write(c_code.strip() + '\n')
+        with open(legs_file, 'w', encoding='utf-8') as f:
+            f.write(l_code.strip() + '\n')
+
+        return {
+            "name": name,
+            "kind": "Armor",
+            "status": "created",
+            "files_created": [helmet_file, chest_file, legs_file],
+            "components": {
+                "head": f"{name}Helmet.cs",
+                "body": f"{name}Breastplate.cs",
+                "legs": f"{name}Leggings.cs"
+            },
+            "preview": f"Scaffolded 1.4 Armor Set into {output_dir}"
+        }
+
+    # 4. In-Game UI Scaffolding (UIState + ModSystem Layer Injection)
     if kind_lower in ['ui', 'uistate', 'hud', 'panel']:
         ui_state_file = os.path.join(output_dir, f"{name}UIState.cs")
         ui_system_file = os.path.join(output_dir, f"{name}UISystem.cs")
@@ -714,7 +976,7 @@ def tool_teramod(command: str = "help", target: Optional[str] = None, extra: Opt
     elif cmd == "create":
         if not target or target.lower() in ["plan", "help", "interview", "interactive"]:
             return tool_tmod_create(kind="plan", name=extra or "MyMod")
-        known_kinds = ['item', 'sword', 'weapon', 'npc', 'enemy', 'boss', 'projectile', 'ui', 'uistate', 'hud', 'panel', 'project', 'mod', 'scaffold']
+        known_kinds = ['item', 'sword', 'weapon', 'armor', 'set', 'armorset', 'mechanic', 'player', 'system', 'npc', 'enemy', 'boss', 'projectile', 'ui', 'uistate', 'hud', 'panel', 'project', 'mod', 'scaffold']
         if target.lower() in known_kinds and extra:
             kind = target
             name = extra
