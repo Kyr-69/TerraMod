@@ -8,7 +8,7 @@ import os
 import sys
 import struct
 import zlib
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 def read_7bit_encoded_int(f) -> int:
     count = 0
@@ -29,13 +29,13 @@ def read_csharp_string(f) -> str:
     data = f.read(length)
     return data.decode('utf-8', errors='replace')
 
-def unpack_tmod(tmod_path: str, output_dir: str = None) -> Dict[str, Any]:
+def unpack_tmod(tmod_path: str, output_dir: Optional[str] = None) -> Dict[str, Any]:
     if not os.path.exists(tmod_path):
         raise FileNotFoundError(f"File not found: {tmod_path}")
 
     if output_dir is None:
         base_name = os.path.splitext(os.path.basename(tmod_path))[0]
-        output_dir = os.path.join(os.path.dirname(tmod_path), f"{base_name}_extracted")
+        output_dir = os.path.join(os.path.dirname(os.path.abspath(tmod_path)), f"{base_name}_extracted")
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -47,41 +47,32 @@ def unpack_tmod(tmod_path: str, output_dir: str = None) -> Dict[str, Any]:
         tmodloader_version = read_csharp_string(f)
         file_hash = f.read(20)
         signature = f.read(256)
-        data_len = struct.unpack('<I', f.read(4))[0]  # total data length / reserved
-        file_table_len = struct.unpack('<i', f.read(4))[0]
-        file_table_data = f.read(file_table_len)
+        data_len = struct.unpack('<i', f.read(4))[0]
 
-        # Decompress file table using Deflate (raw without zlib wrapper)
-        try:
-            decompressed_table = zlib.decompress(file_table_data, -15)
-        except Exception:
-            try:
-                decompressed_table = zlib.decompress(file_table_data)
-            except Exception as e:
-                raise ValueError(f"Failed to decompress file table: {e}")
-
-        import io
-        tbl_stream = io.BytesIO(decompressed_table)
-        mod_name = read_csharp_string(tbl_stream)
-        mod_version = read_csharp_string(tbl_stream)
-        entry_count = struct.unpack('<i', tbl_stream.read(4))[0]
+        mod_name = read_csharp_string(f)
+        mod_version = read_csharp_string(f)
+        entry_count = struct.unpack('<i', f.read(4))[0]
 
         entries = []
         for _ in range(entry_count):
-            name = read_csharp_string(tbl_stream)
-            length = struct.unpack('<i', tbl_stream.read(4))[0]
-            c_length = struct.unpack('<i', tbl_stream.read(4))[0]
+            name = read_csharp_string(f)
+            length = struct.unpack('<i', f.read(4))[0]
+            c_length = struct.unpack('<i', f.read(4))[0]
             entries.append({"name": name, "length": length, "compressed_length": c_length})
 
-        # Now extract payload entries in sequence
+        # Immediately following table, entries are stored sequentially
         extracted_files = []
         for entry in entries:
             raw_bytes = f.read(entry["compressed_length"])
             if entry["length"] != entry["compressed_length"]:
+                # Decompress raw deflate stream
                 try:
                     file_content = zlib.decompress(raw_bytes, -15)
                 except Exception:
-                    file_content = zlib.decompress(raw_bytes)
+                    try:
+                        file_content = zlib.decompress(raw_bytes)
+                    except Exception as e:
+                        raise ValueError(f"Failed to decompress {entry['name']}: {e}")
             else:
                 file_content = raw_bytes
 
