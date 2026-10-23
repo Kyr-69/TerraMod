@@ -1,0 +1,37 @@
+{
+  "name": "teramod",
+  "version": "1.1.0",
+  "description": "tModLoader 1.4+ Knowledge Graph, Decompiler, and Model Context Protocol (MCP) Server for Terraria modding",
+  "main": "bin/teramod.js",
+  "bin": {
+    "teramod": "./bin/teramod.js"
+  },
+  "scripts": {
+    "start": "node bin/teramod.js",
+    "mcp": "python3 server.py",
+    "test": "python3 -c 'import server; print(\"server ok\")'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kyr-69/TerraMod.git"
+  },
+  "keywords": [
+    "terraria",
+    "tmodloader",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "decompiler",
+    "knowledge-graph",
+    "csharp"
+  ],
+  "author": "Kyr-69",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Kyr-69/TerraMod/issues"
+  },
+  "homepage": "https://github.com/Kyr-69/TerraMod#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

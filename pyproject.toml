@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "teramod"
+version = "1.1.0"
+description = "tModLoader 1.4+ Knowledge Graph, Decompiler & MCP Server"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "Kyr-69", email = "kyrontiodianco7@gmail.com" }
+]
+keywords = ["terraria", "tmodloader", "mcp", "decompiler"]
+
+[project.urls]
+Homepage = "https://github.com/Kyr-69/TerraMod"
+Repository = "https://github.com/Kyr-69/TerraMod.git"
+
+[project.scripts]
+teramod = "cli:main"

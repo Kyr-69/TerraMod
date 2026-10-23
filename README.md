@@ -6,6 +6,30 @@
 
 ---
 
+## Installation
+
+### Via npm / npx (Node.js)
+
+Run instantly with **zero installation** via `npx`:
+```bash
+npx github:Kyr-69/TerraMod
+```
+
+Or install globally with npm:
+```bash
+npm install -g github:Kyr-69/TerraMod
+```
+
+### Via pip / uvx (Python)
+
+```bash
+pip install git+https://github.com/Kyr-69/TerraMod.git
+# or run once with uvx:
+uvx --from git+https://github.com/Kyr-69/TerraMod.git teramod
+```
+
+---
+
 ## Quick Start: `/teramod` Interactive Guidance Hub
 
 TerraMod includes an interactive MCP prompt and terminal CLI (`teramod`).
@@ -25,21 +49,25 @@ TerraMod includes an interactive MCP prompt and terminal CLI (`teramod`).
 
 ---
 
-## Installing TerraMod in Hermes Agent / MCP Clients
+## Adding TerraMod to AI Agents & IDEs
 
-### Option 1: One-Click Hermes Registration
+### Hermes Agent
 ```bash
-hermes mcp add teramod --command python3 --args /home/Kyr/projects/teramod/server.py
+# Using npx directly:
+hermes mcp add teramod --command npx --args -y github:Kyr-69/TerraMod
+
+# Or using local python file:
+hermes mcp add teramod --command python3 --args /path/to/teramod/server.py
 ```
 
-### Option 2: Claude Desktop / Cursor (`mcpServers` config)
-Add the following snippet to your `claude_desktop_config.json` or Cursor MCP settings:
+### Claude Desktop / Cursor (`mcpServers` config)
+Add this snippet to your `claude_desktop_config.json` or Cursor MCP settings:
 ```json
 {
   "mcpServers": {
     "teramod": {
-      "command": "python3",
-      "args": ["/absolute/path/to/TerraMod/server.py"]
+      "command": "npx",
+      "args": ["-y", "github:Kyr-69/TerraMod"]
     }
   }
 }
@@ -49,7 +77,7 @@ Add the following snippet to your `claude_desktop_config.json` or Cursor MCP set
 
 ## Direct Terminal CLI Usage
 
-TerraMod is installed directly to `~/.local/bin/teramod`:
+After installing via `npm install -g github:Kyr-69/TerraMod` or `pip install`:
 ```bash
 # View guidance menu
 teramod
@@ -70,6 +98,9 @@ teramod docs ModItem
 
 | File / Tool | Description |
 | :--- | :--- |
+| `bin/teramod.js` | Node.js entry point auto-detecting CLI vs stdio MCP server execution. |
+| `package.json` | npm package manifest supporting `npx` and global install. |
+| `pyproject.toml` | Python packaging manifest supporting `pip` and `uvx`. |
 | `server.py` | Model Context Protocol (MCP) server providing 10 modding & decompiler tools over JSON-RPC stdio. |
 | `cli.py` | Terminal CLI wrapper (`teramod`) exposing all tools directly to shell scripts. |
 | `tmod_extractor.py` | Standalone CLI & module to extract any Terraria `.tmod` package into assets and .NET assemblies. |
