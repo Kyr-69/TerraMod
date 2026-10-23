@@ -1,6 +1,8 @@
 # TerraMod (tModLoader 1.4+ Knowledge Graph & Agent Spec)
 
-> An authoritative, decompilation-grounded Knowledge Graph and universal agent specification for Terraria 1.4.4+ (`tModLoader`) mod development.
+> An authoritative, open-source, decompilation-grounded Knowledge Graph and universal agent specification for Terraria 1.4.4+ (`tModLoader`) mod development.
+
+> **Status**: Open Source & Active Work in Progress (WIP). Contributions and feedback are welcome!
 
 ## Overview
 
